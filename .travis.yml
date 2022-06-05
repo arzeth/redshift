@@ -5,7 +5,7 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      dist: trusty
+      dist: xenial
       sudo: false
     - os: osx
       compiler: clang
@@ -23,6 +23,8 @@ addons:
       # VidMode
       - libx11-dev
       - libxxf86vm-dev
+      # Wayland
+      - libwayland-dev
       # GeoClue2
       - libglib2.0-dev
       # GUI
@@ -35,6 +37,13 @@ before_install: |
     brew link --force gettext
     brew install intltool
     brew upgrade python
+    
+    # distuninstallcheck fails on macOS when automake 1.16 or 1.16.1 is used.
+    # http://gnu-automake.7480.n7.nabble.com/bug-31222-automake-1-16-1-am-pep3147-tweak-bug-td22937.html
+    # No upstream release yet, use upstream patch.
+    pushd /usr/local/Cellar/automake/*/share/automake-*
+    curl "https://git.savannah.gnu.org/cgit/automake.git/patch/?id=a348d830659fffd2cfc42994524783b07e69b4b5" | tail -n 14 | sudo patch -p2
+    popd
   fi
 
 install:
@@ -42,7 +51,7 @@ install:
   - mkdir "$TRAVIS_BUILD_DIR/root"
   - |
     if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-      ./configure --prefix="$TRAVIS_BUILD_DIR/root" --enable-drm --enable-vidmode --enable-randr --enable-geoclue2 --enable-gui --enable-apparmor
+      ./configure --prefix="$TRAVIS_BUILD_DIR/root" --enable-drm --enable-vidmode --enable-randr --enable-geoclue2 --enable-gui --enable-apparmor --with-systemduserunitdir=no
     elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
       ./configure --prefix="$TRAVIS_BUILD_DIR/root" --enable-corelocation --enable-quartz --enable-gui
     fi
